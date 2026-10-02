@@ -1,133 +1,44 @@
-# GraphBook Recommendation System
+# รวมการบ้าน — 664245008
 
-โปรเจ็คตัวอย่างระดับปริญญาตรีสำหรับรายวิชา Graph Database / Advanced Database
-พัฒนาด้วย **Streamlit + Neo4j Aura + Cypher** และออกแบบให้ deploy ผ่าน **GitHub → Streamlit Community Cloud** ได้โดยตรง
+ณัฏฐนันท์ เกียรติจิรยาดา
+Steam URL: https://motorcycle-gvxn2krgpgs76foizvr8nu.streamlit.app/recommendation
 
-## 1. แนวคิดของระบบ
+รวมการบ้านทั้ง 3 ไฟล์ที่แนบมา พร้อมไฟล์ประกอบโปรเจกต์มอเตอร์ไซค์
 
-ระบบใช้ Property Graph ดังนี้
+[หน้า index](index.html) · [Repository](https://github.com/YokMiracle/Motorcycle)
 
-```text
-(Student)-[:FRIEND_OF]-(Student)
-(Student)-[:BORROWED {borrow_date, rating}]->(Book)
-(Student)-[:INTERESTED_IN]->(Category)
-(Book)-[:IN_CATEGORY]->(Category)
-(Author)-[:WROTE]->(Book)
-```
+| งาน | การบ้าน | ไฟล์ | Colab |
+| --- | --- | --- | --- |
+| 01 | ระบบชมรมด้วย Neo4j | [เปิดไฟล์](homework/664245008_club_system.pdf) | — |
+| 02 | Motorcycle Recommender ด้วย Graph | [เปิดไฟล์](homework/664245008_Motorcycle_RecommenderSystem.ipynb) | [เปิด Colab](https://colab.research.google.com/github/YokMiracle/Motorcycle/blob/main/homework/664245008_Motorcycle_RecommenderSystem.ipynb) |
+| 03 | Motorcycle Recommender ด้วย Neo4j | [เปิดไฟล์](homework/CryptoRecommender_664245008_Neo4j.ipynb) | [เปิด Colab](https://colab.research.google.com/github/YokMiracle/Motorcycle/blob/main/homework/CryptoRecommender_664245008_Neo4j.ipynb) |
 
-จุดเด่นคือคำแนะนำอธิบายได้ (Explainable Recommendation) ว่าหนังสือถูกแนะนำเพราะ
-1. เพื่อนของผู้ใช้เคยยืม
-2. หมวดหนังสือตรงกับความสนใจ
-3. หนังสือได้รับความนิยม
-4. หนังสือมีคะแนนเฉลี่ยดี
+ไฟล์ `CryptoRecommender_664245008_Neo4j.ipynb` มีเนื้อหาเกี่ยวกับมอเตอร์ไซค์ จึงใช้ชื่องานตามเนื้อหา โดยเก็บไฟล์ต้นฉบับไว้ครบถ้วน
 
-ตัวอย่างคะแนน Hybrid:
+## โน้ตบุ๊กประกอบโปรเจกต์เดิม
 
-```text
-score = friend_count*3
-      + interest_matches*2
-      + popularity*0.20
-      + average_rating*0.50
-```
+- [โครงสร้างข้อมูล](notebooks/01_motorcycle_data_structure.ipynb)
+- [วิเคราะห์ความสัมพันธ์](notebooks/02_motorcycle_relationship_analysis.ipynb)
+- [ระบบแนะนำฉบับรวม](MotorcycleRecommender_664245008_Neo4j.ipynb)
 
-สูตรนี้เป็น heuristic เพื่อการเรียนการสอน ไม่ใช่โมเดล ML ที่ผ่านการ optimize
+# MotoGraph — Motorcycle Graph Recommendation
 
-## 2. โครงสร้างไฟล์
+เวอร์ชันนี้ปรับระบบจากแนว “ประวัติการเช่า” เป็นระบบแนะนำจาก “ความชอบ” ให้ทำงานในแนวเดียวกับ Graph Recommendation โดยยังใช้ข้อมูลมอเตอร์ไซค์เดิมของโปรเจกต์
 
-```text
-book_graph_recommender/
-├── app.py
-├── neo4j_service.py
-├── requirements.txt
-├── .gitignore
-├── .streamlit/
-│   └── secrets.toml.example
-└── cypher/
-    └── schema.cypher
-```
+## การทำงาน
+1. เลือกผู้ใช้ในหน้า **ภาพรวม** เพื่อดูความชอบและสถิติ
+2. หน้า **แนะนำสำหรับคุณ** ใช้เส้นทาง `User -> LIKES -> Motorcycle <- LIKES - User -> LIKES -> Motorcycle` เพื่อหารุ่นใหม่
+3. หน้า **บันทึกความชอบ** เพิ่ม/อัปเดตความสัมพันธ์ `LIKES` พร้อมคะแนน 1–5
+4. หน้า **ประวัติความชอบ** แสดงตาราง สถิติ และกราฟคะแนนของผู้ใช้
+5. หน้า **กราฟความสัมพันธ์** แสดง Neo4j graph รายคนหรือทั้งหมด
+6. หน้า **จัดการข้อมูล** เพิ่ม/ลบผู้ใช้ เพิ่ม/ลบรถ และอัปโหลด/แก้ไขรูปรถ
 
-## 3. สร้าง Neo4j Aura
+ระบบจะคัดลอกข้อมูล `RENTED` จากเวอร์ชันเก่าเข้า `LIKES` อัตโนมัติ เพื่อรักษาข้อมูลเดิมไว้
 
-1. สร้าง AuraDB instance
-2. เก็บค่า Connection URI, username และ password
-3. URI ของ Aura โดยทั่วไปอยู่ในรูป `neo4j+s://...databases.neo4j.io`
-4. อย่านำ password ไปใส่ในไฟล์ที่ commit ขึ้น GitHub
-
-## 4. รันในเครื่อง
-
+## วิธีรัน
 ```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS/Linux
-source .venv/bin/activate
-
 pip install -r requirements.txt
-```
-
-คัดลอกไฟล์ตัวอย่าง secrets
-
-```bash
-cp .streamlit/secrets.toml.example .streamlit/secrets.toml
-```
-
-จากนั้นใส่ credential จริง แล้วรัน
-
-```bash
 streamlit run app.py
 ```
 
-## 5. ครั้งแรกที่เปิดระบบ
-
-1. เข้าเมนู **Admin / Setup**
-2. กด **สร้าง Constraint + Demo Data**
-3. ระบบใช้ `MERGE` จึงกดซ้ำได้โดยไม่สร้าง node ซ้ำจาก key เดิม
-4. จากนั้นทดลอง Dashboard, Recommendations, Search, Borrow/Rate และ Graph Explorer
-
-## 6. Deploy GitHub → Streamlit Community Cloud
-
-1. สร้าง GitHub repository ใหม่
-2. push ไฟล์ทั้งหมดขึ้น GitHub **ยกเว้น `.streamlit/secrets.toml`**
-3. เข้า Streamlit Community Cloud แล้วเลือก Create app
-4. เลือก repository, branch และ entrypoint = `app.py`
-5. ใน Advanced settings → Secrets ใส่
-
-```toml
-[neo4j]
-uri = "neo4j+s://YOUR_INSTANCE.databases.neo4j.io"
-username = "neo4j"
-password = "YOUR_PASSWORD"
-database = "neo4j"
-```
-
-6. Deploy
-
-## 7. ประเด็น Graph Database ที่นักศึกษาจะได้ฝึก
-
-- Node, Label, Property
-- Relationship และ Direction
-- Constraint และ Unique Key
-- `MATCH`, `MERGE`, `OPTIONAL MATCH`, `WITH`, `UNWIND`
-- Graph traversal ผ่านเพื่อน → หนังสือ
-- Aggregation เช่น `count`, `avg`, `collect`
-- Recommendation จาก topology ของกราฟ
-- Parameterized Cypher
-- Python Driver และ connection pooling
-- Streamlit UI
-- Secrets และ cloud deployment
-
-## 8. สิ่งที่ปรับปรุงจาก notebook ต้นแบบ
-
-- ใช้ label `Student` ให้สอดคล้องทั้งระบบ แทนการปะปน `Student2`/`Student`
-- ใช้ `MERGE` ใน seed data เพื่อรองรับการรันซ้ำ
-- เพิ่ม Unique Constraints
-- ใช้ parameterized Cypher แทนการต่อ string จาก input
-- มอง `FRIEND_OF` เป็นความสัมพันธ์เชิงสมมาตรตอน query ด้วย `-[:FRIEND_OF]-`
-- เพิ่ม Author, Category และ Interest เพื่อให้ recommendation มีมิติด้าน content
-- เพิ่ม rating และ popularity เพื่อสร้าง Hybrid Score
-- แยก database layer (`neo4j_service.py`) ออกจาก UI (`app.py`)
-- ใช้ Streamlit Secrets แทนการ hardcode Aura credential
-
-## 9. แนวทางต่อยอดเป็นโครงงานนักศึกษา
-
-สามารถเพิ่ม Login, Favorite/Wishlist, การคืนหนังสือ, due date, collaborative filtering, Graph Data Science similarity, PageRank, community detection, evaluation metrics เช่น Precision@K/Recall@K และระบบผู้ดูแลได้
+คัดลอก `.streamlit/secrets.toml.example` เป็น `.streamlit/secrets.toml` แล้วกรอก Neo4j URI / username / password ก่อนรัน
